@@ -8,7 +8,7 @@ function App() {
   const [tasks, setTasks] = useState([])
   const [taskTitle, setTaskTitle] = useState('')
   const [taskText, setTaskText] = useState('')
-  // const [balance, setbalance] = useState('')
+  // const [taskId, setTaskId] = useState('')
   const [isConnected, setIsConnected] = useState(false)
   const [walletAddress, setWalletAddress] = useState('')
   const contractAddress = "0x0D16Ec2af167bdf8B86adBf3258D7974501e7B74"
@@ -85,7 +85,8 @@ async function disconnectWallet() {
   try {
       const tx = await contract.addTask(taskText, taskTitle, false)
       toast.loading('Adding Task...', { duration: 1000 })
-      const receipt = tx.wait()
+      const receipt = await tx.wait()
+      console.log(receipt)
       toast.success('Task added successfully!')
       await _getMyTask()
       toast.success("Task updated")
@@ -98,7 +99,7 @@ async function disconnectWallet() {
   }
   }
 
-  async function _deleteTask() {
+  async function _deleteTask(id) {
     // requestAccounts()
     if (!isConnected) {
       return
@@ -108,7 +109,7 @@ async function disconnectWallet() {
     const signer = await provider.getSigner()
     const contract = new ethers.Contract(contractAddress, abi, signer)
     try {
-        const tx = await contract.deleteTask(useramount)
+        const tx = await contract.deleteTask(id)
         toast.loading('Deleting...', { duration: 1000 })
         const receipt = tx.wait()
         toast.success('Task deleted Succesfully!')
@@ -129,18 +130,19 @@ async function disconnectWallet() {
     if (typeof window.ethereum !== "undefined") {
 
     const provider = new ethers.BrowserProvider(window.ethereum)
-    const contract = new ethers.Contract(contractAddress, abi, provider)
+    const signer = await provider.getSigner()
+    const contract = new ethers.Contract(contractAddress, abi, signer)
 
   try {
       toast.loading('Getting tasks...', { duration: 1000 })
       const _tasks = await contract.getMyTask()
-      console.log(_tasks)
       const formattedTasks = _tasks.map(task => ({
         id: Number(task.id),
         taskTitle: task.taskTitle,
         taskText: task.taskText,
         isDeleted: task.isDeleted
       }))
+      console.log(formattedTasks)
       setTasks(formattedTasks)
       toast.success('Tasks updated!')
       console.log("retrieval successful", _tasks)
@@ -255,22 +257,6 @@ async function disconnectWallet() {
           Add Task
         </button>
         
-        <button 
-          onClick={_deleteTask}
-          style={{
-            backgroundColor: '#f44336',
-            color: 'white',
-            padding: '8px 16px',
-            border: 'none',
-            borderRadius: '4px',
-            marginRight: '10px',
-            cursor: 'pointer',
-            opacity: isConnected ? 1 : 0.5
-          }}
-          disabled={!isConnected}
-        >
-          Delete Task
-        </button>
         
         <button 
           onClick={_getMyTask}
@@ -299,9 +285,29 @@ async function disconnectWallet() {
         
         {tasks.length > 0 ? (
           <div>
-            {tasks.map((task) => (
-              <TaskItem key={task.id} task={task} />
-            ))}
+          {tasks.map((task) => (
+            <div key={task.id}>
+              <h3>{task.taskTitle}</h3>
+              <p>{task.taskText}</p>
+              <button 
+                onClick={() => _deleteTask(task.id)}
+                style={{
+                  backgroundColor: '#f44336',
+                  color: 'white',
+                  padding: '8px 16px',
+                  border: 'none',
+                  borderRadius: '4px',
+                  marginRight: '10px',
+                  cursor: 'pointer',
+                  opacity: isConnected ? 1 : 0.5
+                }}
+                disabled={!isConnected}
+              >
+                Delete Task
+              </button>
+            </div>
+          ))}
+              
           </div>
         ) : (
           <p style={{ 
